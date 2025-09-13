@@ -266,14 +266,20 @@
 
             <div id="page-data" class="page">
                 <div class="card p-8 max-w-lg mx-auto">
-                    <h2 class="text-2xl font-bold mb-4 text-white">Data Management</h2>
-                    <p class="text-gray-400 mb-6">Import local files to analyze your history, or export all data from the browser into a single file.</p>
+                    <h2 class="text-2xl font-bold mb-4 text-white">Cloud Data (GitHub)</h2>
+                    <p class="text-gray-400 mb-4">Load all your historical data from your GitHub repository. Requires a `data_manifest.json` file. This will replace any data currently in the browser.</p>
+                    <button id="load-github-btn" class="w-full bg-purple-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-purple-700">Load from Cloud</button>
+                </div>
+
+                <div class="card p-8 max-w-lg mx-auto mt-8">
+                    <h2 class="text-2xl font-bold mb-4 text-white">Local Browser Data</h2>
+                    <p class="text-gray-400 mb-6">Manage the data stored directly in your browser. Use this to save backups or import local files.</p>
                     <div class="space-y-4">
                         <button id="export-today-btn" class="w-full bg-indigo-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-indigo-700">Save Today's Data</button>
                         <button id="export-data-btn" class="w-full bg-blue-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-blue-700">Export All Data</button>
                         <div>
                             <input type="file" id="import-file-input" class="hidden" accept=".json" multiple>
-                            <button id="import-data-btn" class="w-full bg-green-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-green-700">Import Daily File(s)</button>
+                            <button id="import-data-btn" class="w-full bg-green-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-green-700">Import Local File(s)</button>
                         </div>
                         <hr class="border-gray-600 my-4">
                         <button id="clear-data-btn" class="w-full bg-red-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-red-700">Clear All Browser Data</button>
@@ -316,6 +322,7 @@
             filterBtns: document.querySelectorAll('.filter-btn'),
         };
         const dataControls = {
+            loadGithubBtn: document.getElementById('load-github-btn'),
             exportTodayButton: document.getElementById('export-today-btn'),
             exportButton: document.getElementById('export-data-btn'),
             importButton: document.getElementById('import-data-btn'),
@@ -549,7 +556,7 @@
              const totals = sessions.reduce((acc, s) => { acc[s.category] = (acc[s.category] || 0) + s.duration; return acc; }, {});
              const data = { labels: Object.keys(totals), datasets: [{ label: 'Hours', data: Object.values(totals).map(ms => (ms / 3600000).toFixed(2)), backgroundColor: Object.keys(totals).map(l => chartColors[l] || '#8b949e') }] };
              const options = { responsive: true, maintainAspectRatio: false, indexAxis: 'y', plugins: { legend: { display: false } }, scales: { x: { ticks: { color: '#c9d1d9' } }, y: { ticks: { color: '#c9d1d9' } } } };
-             state.activityChart = renderChart(state.activityChart, analysisElements.activityCanvas, 'bar', data, options);
+             state.activityChart = renderChart(state.activityCanvas, 'bar', data, options);
         };
 
         const renderProductivityLineChart = () => {
@@ -727,6 +734,35 @@
             }
             dataControls.importInput.value = '';
         };
+
+        const handleLoadFromGithub = async () => {
+            try {
+                showToast('Loading data from cloud...');
+                const manifestResponse = await fetch('./data_manifest.json');
+                if (!manifestResponse.ok) throw new Error('Manifest file not found.');
+                
+                const filePaths = await manifestResponse.json();
+                if (!Array.isArray(filePaths)) throw new Error('Manifest is not a valid list.');
+
+                const allData = await Promise.all(
+                    filePaths.map(path => fetch(path).then(res => res.json()))
+                );
+
+                const newSessions = {};
+                allData.forEach(dayData => {
+                    Object.assign(newSessions, dayData);
+                });
+
+                state.sessions = newSessions;
+                saveState();
+                render();
+                showToast('Cloud data loaded successfully!');
+
+            } catch(error) {
+                showToast(`Error loading from cloud: ${error.message}`, true);
+            }
+        };
+
         const handleClearData = () => {
             state.sessionToDelete = 'all_data';
             modal.container.classList.add('show');
@@ -745,10 +781,16 @@
                 showToast("All browser data cleared.", true);
             } else if (state.sessionToDelete) {
                 const todayKey = getISODateKey(new Date());
-                state.sessions[todayKey] = state.sessions[todayKey].filter(s => s.startTime !== state.sessionToDelete);
-                if (state.sessions[todayKey].length === 0) delete state.sessions[todayKey];
-                saveState();
-                showToast("Session removed.");
+                if (state.sessions[todayKey] && Array.isArray(state.sessions[todayKey])) {
+                    const updatedSessions = state.sessions[todayKey].filter(s => s.startTime !== state.sessionToDelete);
+                    if (updatedSessions.length > 0) {
+                        state.sessions[todayKey] = updatedSessions;
+                    } else {
+                        delete state.sessions[todayKey];
+                    }
+                    saveState();
+                    showToast("Session removed.");
+                }
             }
             render();
             closeModal();
@@ -797,6 +839,7 @@
         dataControls.importButton.addEventListener('click', () => dataControls.importInput.click());
         dataControls.importInput.addEventListener('change', handleImport);
         dataControls.clearButton.addEventListener('click', handleClearData);
+        dataControls.loadGithubBtn.addEventListener('click', handleLoadFromGithub);
         logs.today.addEventListener('click', handleDeleteRequest);
         modal.confirmBtn.addEventListener('click', confirmDeletion);
         modal.cancelBtn.addEventListener('click', closeModal);
