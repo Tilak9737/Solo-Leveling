@@ -750,12 +750,21 @@
             dataControls.importInput.value = '';
         };
 
-        const handleLoadFromGithub = async () => {
+        const handleLoadFromGithub = async (isSilent = false) => {
             try {
-                showToast('Loading data from cloud...');
+                if (!isSilent) {
+                    showToast('Loading data from cloud...');
+                }
                 const manifestResponse = await fetch('./data_manifest.json');
-                if (!manifestResponse.ok) throw new Error('Manifest file not found.');
                 
+                if (!manifestResponse.ok) {
+                    if (isSilent) {
+                        console.log('No cloud manifest found, skipping auto-load.');
+                        return;
+                    }
+                    throw new Error('Manifest file not found.');
+                }
+
                 const filePaths = await manifestResponse.json();
                 if (!Array.isArray(filePaths)) throw new Error('Manifest is not a valid list.');
 
@@ -771,10 +780,18 @@
                 state.sessions = newSessions;
                 saveState();
                 render();
-                showToast('Cloud data loaded successfully!');
+                if (!isSilent) {
+                    showToast('Cloud data loaded successfully!');
+                } else {
+                    console.log('Cloud data synced automatically.');
+                }
 
             } catch(error) {
-                showToast(`Error loading from cloud: ${error.message}`, true);
+                if (!isSilent) {
+                    showToast(`Error loading from cloud: ${error.message}`, true);
+                } else {
+                    console.error('Silent cloud sync failed:', error.message);
+                }
             }
         };
 
@@ -854,7 +871,7 @@
         dataControls.importButton.addEventListener('click', () => dataControls.importInput.click());
         dataControls.importInput.addEventListener('change', handleImport);
         dataControls.clearButton.addEventListener('click', handleClearData);
-        dataControls.loadGithubBtn.addEventListener('click', handleLoadFromGithub);
+        dataControls.loadGithubBtn.addEventListener('click', () => handleLoadFromGithub(false));
         logs.today.addEventListener('click', handleDeleteRequest);
         modal.confirmBtn.addEventListener('click', confirmDeletion);
         modal.cancelBtn.addEventListener('click', closeModal);
@@ -882,6 +899,10 @@
         setupManualModeToggle();
         updateLiveClock();
         setInterval(updateLiveClock, 1000);
+
+        if (window.location.protocol.startsWith('http')) {
+            handleLoadFromGithub(true);
+        }
     });
     </script>
 </body>
