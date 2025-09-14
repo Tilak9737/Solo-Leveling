@@ -554,9 +554,24 @@
         };
         const renderActivityBarChart = (sessions) => {
              const totals = sessions.reduce((acc, s) => { acc[s.category] = (acc[s.category] || 0) + s.duration; return acc; }, {});
-             const data = { labels: Object.keys(totals), datasets: [{ label: 'Hours', data: Object.values(totals).map(ms => (ms / 3600000).toFixed(2)), backgroundColor: Object.keys(totals).map(l => chartColors[l] || '#8b949e') }] };
-             const options = { responsive: true, maintainAspectRatio: false, indexAxis: 'y', plugins: { legend: { display: false } }, scales: { x: { ticks: { color: '#c9d1d9' } }, y: { ticks: { color: '#c9d1d9' } } } };
-             state.activityChart = renderChart(state.activityCanvas, 'bar', data, options);
+             const data = { labels: Object.keys(totals), datasets: [{ label: 'Hours', data: Object.values(totals).map(ms => ms / 3600000), backgroundColor: Object.keys(totals).map(l => chartColors[l] || '#8b949e') }] };
+             const options = { 
+                responsive: true, 
+                maintainAspectRatio: false, 
+                indexAxis: 'y', 
+                plugins: { 
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                             label: (context) => `${context.dataset.label}: ${context.raw.toFixed(2)} hours`
+                        }
+                    }
+                }, 
+                scales: { 
+                    x: { ticks: { color: '#c9d1d9' } }, 
+                    y: { ticks: { color: '#c9d1d9' } } } 
+                };
+             state.activityChart = renderChart(state.activityChart, analysisElements.activityCanvas, 'bar', data, options);
         };
 
         const renderProductivityLineChart = () => {
