@@ -123,7 +123,7 @@
         }
     </style>
 </head>
-<body>
+<body class="min-h-screen">
 
     <div id="password-overlay">
         <div class="card p-8 w-full max-w-sm text-center">
@@ -230,16 +230,16 @@
                             </div>
                         </div>
 
-                        <div class="card p-6">
+                        <div class="card p-6 flex flex-col">
                             <h2 class="text-2xl font-bold mb-4 text-white">Today's Log</h2>
-                            <div id="todays-log" class="space-y-3 h-[40rem] overflow-y-auto pr-2">
+                            <div id="todays-log" class="space-y-3 flex-grow overflow-y-auto pr-2 h-96">
                             <p id="no-sessions-msg" class="text-gray-500 text-center mt-10">No sessions logged yet today. Start one to begin!</p>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <div id="page-analysis" class="page">
+                <div id="page-analysis" class="page pb-8">
                     <div class="card p-6 mb-8">
                         <h2 class="text-2xl font-bold mb-4 text-white">Analyze Your Time</h2>
                         <p class="text-gray-400 mb-4">Use the filters below to see how you've spent your time. Your data is based on imported files and sessions saved in this browser.</p>
@@ -255,36 +255,54 @@
                             <button id="reset-filter-btn" class="bg-gray-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-gray-700">All Time</button>
                         </div>
                     </div>
-                    <div class="grid grid-cols-1 lg:grid-cols-5 gap-8">
-                        <div class="lg:col-span-2 card p-6">
-                            <h2 id="stats-title" class="text-2xl font-bold mb-4 text-white">Key Statistics</h2>
-                            <div class="space-y-4">
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                        <div class="card p-6">
+                            <h2 id="stats-title" class="text-xl font-bold mb-4 text-white">Key Statistics</h2>
+                            <div class="grid grid-cols-2 gap-4">
                                 <div>
-                                    <p class="text-gray-400">Total Time Tracked</p>
-                                    <p id="stats-total-time" class="text-3xl font-bold text-green-400 font-mono"></p>
+                                    <p class="text-gray-400 text-sm">Total Time Tracked</p>
+                                    <p id="stats-total-time" class="text-2xl font-bold text-green-400 font-mono"></p>
                                 </div>
                                 <div>
-                                    <p class="text-gray-400">Most Frequent Activity</p>
-                                    <p id="stats-most-frequent" class="text-3xl font-bold text-green-400 font-mono"></p>
+                                    <p class="text-gray-400 text-sm">Productivity Score</p>
+                                    <p id="stats-productivity-score" class="text-2xl font-bold text-green-400 font-mono"></p>
                                 </div>
                                 <div>
-                                    <p class="text-gray-400">Most Productive Day</p>
-                                    <p id="stats-most-productive-day" class="text-3xl font-bold text-green-400 font-mono"></p>
+                                    <p class="text-gray-400 text-sm">Avg. Session</p>
+                                    <p id="stats-avg-session" class="text-2xl font-bold text-green-400 font-mono"></p>
+                                </div>
+                                 <div>
+                                    <p class="text-gray-400 text-sm">Most Frequent</p>
+                                    <p id="stats-most-frequent" class="text-2xl font-bold text-green-400 font-mono"></p>
+                                </div>
+                                <div class="col-span-2">
+                                    <p class="text-gray-400 text-sm">Most Productive Day</p>
+                                    <p id="stats-most-productive-day" class="text-2xl font-bold text-green-400 font-mono"></p>
                                 </div>
                             </div>
                         </div>
-                        <div class="lg:col-span-3 card p-6">
-                            <h2 id="pie-chart-title" class="text-2xl font-bold mb-4 text-white">Category Breakdown</h2>
-                            <div class="h-80"><canvas id="category-pie-chart"></canvas></div>
+                        <div class="card p-6">
+                             <h2 id="pie-chart-title" class="text-xl font-bold mb-4 text-white">Category Breakdown</h2>
+                             <div class="h-64"><canvas id="category-pie-chart"></canvas></div>
+                        </div>
+                        <div class="card p-6">
+                            <h2 id="bar-chart-title" class="text-xl font-bold mb-4 text-white">Activity by Category</h2>
+                            <div class="h-64"><canvas id="activity-bar-chart"></canvas></div>
+                        </div>
+                        <div class="card p-6">
+                            <h2 class="text-xl font-bold mb-4 text-white">Productive vs. Distraction</h2>
+                            <div class="h-64"><canvas id="productivity-split-chart"></canvas></div>
                         </div>
                     </div>
                     <div class="card p-6 mt-8">
-                        <h2 id="bar-chart-title" class="text-2xl font-bold mb-4 text-white">Activity by Category (Total Hours)</h2>
-                        <div class="h-80"><canvas id="activity-bar-chart"></canvas></div>
+                        <h2 class="text-xl font-bold mb-4 text-white">Recent Productivity Trend (Last 7 Days)</h2>
+                        <div class="h-80"><canvas id="productivity-line-chart"></canvas></div>
                     </div>
                     <div class="card p-6 mt-8">
-                        <h2 class="text-2xl font-bold mb-4 text-white">Recent Productivity Trend</h2>
-                        <div class="h-80"><canvas id="productivity-line-chart"></canvas></div>
+                        <h2 id="session-details-title" class="text-xl font-bold mb-4 text-white">Session Details</h2>
+                        <div id="session-details-list" class="space-y-2 max-h-96 overflow-y-auto pr-2">
+                            <!-- Session details will be rendered here -->
+                        </div>
                     </div>
                 </div>
 
@@ -348,14 +366,13 @@
         });
         
         function initializeApp() {
-            // --- CHART.JS DEFAULTS FOR HACKER THEME ---
             Chart.defaults.color = '#c9d1d9';
             Chart.defaults.borderColor = '#30363d';
             
             let state = {
                 sessions: JSON.parse(localStorage.getItem('disciplineArchitectSessions')) || {},
                 currentSession: null, activePage: 'dashboard',
-                categoryChart: null, activityChart: null, lineChart: null,
+                categoryChart: null, activityChart: null, lineChart: null, splitChart: null,
                 sessionToDelete: null,
             };
 
@@ -374,7 +391,13 @@
                 statsTitle: document.getElementById('stats-title'), pieChartTitle: document.getElementById('pie-chart-title'), barChartTitle: document.getElementById('bar-chart-title'),
                 categoryCanvas: document.getElementById('category-pie-chart'), activityCanvas: document.getElementById('activity-bar-chart'),
                 lineCanvas: document.getElementById('productivity-line-chart'),
-                statsTotalTime: document.getElementById('stats-total-time'), statsMostFrequent: document.getElementById('stats-most-frequent'),
+                splitCanvas: document.getElementById('productivity-split-chart'),
+                sessionDetailsList: document.getElementById('session-details-list'),
+                sessionDetailsTitle: document.getElementById('session-details-title'),
+                statsTotalTime: document.getElementById('stats-total-time'), 
+                statsProductivityScore: document.getElementById('stats-productivity-score'),
+                statsAvgSession: document.getElementById('stats-avg-session'),
+                statsMostFrequent: document.getElementById('stats-most-frequent'),
                 statsMostProductiveDay: document.getElementById('stats-most-productive-day'),
                 filterBtns: document.querySelectorAll('.filter-btn'),
             };
@@ -531,26 +554,39 @@
                 }
                 analysisElements.statsTitle.textContent = `Key Statistics ${titleDate}`;
                 analysisElements.pieChartTitle.textContent = `Category Breakdown ${titleDate}`;
-                analysisElements.barChartTitle.textContent = `Activity (Hours) ${titleDate}`;
-                const totalMs = sessionsToAnalyze.reduce((acc, s) => acc + s.duration, 0);
-                analysisElements.statsTotalTime.textContent = formatDuration(totalMs) || '0m';
-                const { mostFrequent, mostProductiveDay } = getStatsForPeriod(sessionsData);
+                analysisElements.barChartTitle.textContent = `Activity by Category`;
+                analysisElements.sessionDetailsTitle.textContent = `Session Details ${titleDate}`;
+                
+                const { mostFrequent, mostProductiveDay, totalDuration, productiveDuration, sessionCount } = getStatsForPeriod(sessionsData);
+                analysisElements.statsTotalTime.textContent = formatDuration(totalDuration) || '0m';
                 analysisElements.statsMostFrequent.textContent = mostFrequent || 'N/A';
                 analysisElements.statsMostProductiveDay.textContent = (period === 'today' || period.includes('-')) ? 'N/A' : mostProductiveDay || 'N/A';
+                analysisElements.statsAvgSession.textContent = sessionCount > 0 ? formatDuration(totalDuration / sessionCount) : '0m';
+                analysisElements.statsProductivityScore.textContent = totalDuration > 0 ? `${Math.round((productiveDuration / totalDuration) * 100)}%` : '0%';
+
                 renderCategoryPieChart(sessionsToAnalyze);
                 renderActivityBarChart(sessionsToAnalyze);
                 renderProductivityLineChart();
+                renderProductivitySplitChart(totalDuration, productiveDuration);
+                renderSessionDetails(sessionsToAnalyze);
             };
             const getStatsForPeriod = (sessionsData) => {
                 const categoryCounts = {}, dailyProductiveDurations = {};
                 const productiveCategories = ['Study', 'Work', 'Fitness', 'Reading', 'Chores', 'Other'];
+                let totalDuration = 0;
+                let productiveDuration = 0;
+                let sessionCount = 0;
 
                 Object.entries(sessionsData).forEach(([date, sessions]) => {
                     dailyProductiveDurations[date] = 0;
                     sessions.forEach(s => {
+                        sessionCount++;
+                        totalDuration += s.duration;
                         categoryCounts[s.category] = (categoryCounts[s.category] || 0) + 1;
                         if (productiveCategories.includes(s.category)) {
-                            dailyProductiveDurations[date] += s.duration;
+                            const duration = s.duration;
+                            dailyProductiveDurations[date] += duration;
+                            productiveDuration += duration;
                         }
                     });
                 });
@@ -568,14 +604,14 @@
                     if (count > maxCount) { maxCount = count; mostFrequent = cat; }
                 });
 
-                return { mostFrequent, mostProductiveDay };
+                return { mostFrequent, mostProductiveDay, totalDuration, productiveDuration, sessionCount };
             };
 
             const chartColors = { Study: '#2ea043', Work: '#3fb950', Fitness: '#56d364', Reading: '#00a39f', Entertainment: '#f0b623', YouTube: '#dbab09', Instagram: '#e1306c', Chores: '#a371f7', Social: '#d2a8ff', Other: '#8b949e' };
             const renderChart = (chartInstance, canvas, type, data, options) => {
                 if (chartInstance) chartInstance.destroy();
                 canvas.getContext('2d').clearRect(0,0,canvas.width, canvas.height);
-                if (data.labels.length === 0) return null;
+                if (data.datasets[0].data.length === 0 || data.datasets[0].data.every(item => item === 0)) return null;
                 return new Chart(canvas, { type, data, options });
             };
             const renderCategoryPieChart = (sessions) => {
@@ -678,6 +714,52 @@
                 };
 
                 state.lineChart = renderChart(state.lineChart, analysisElements.lineCanvas, 'line', data, options);
+            };
+
+            const renderProductivitySplitChart = (totalDuration, productiveDuration) => {
+                const distractionDuration = totalDuration - productiveDuration;
+                const data = {
+                    labels: ['Productive', 'Distraction'],
+                    datasets: [{
+                        data: [productiveDuration, distractionDuration],
+                        backgroundColor: ['#2ea043', '#dbab09'],
+                        borderWidth: 0
+                    }]
+                };
+                const options = {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'right', labels: { color: '#c9d1d9' } },
+                        tooltip: {
+                            callbacks: {
+                                label: (context) => `${context.label}: ${formatDuration(context.raw)}`
+                            }
+                        }
+                    }
+                };
+                state.splitChart = renderChart(state.splitChart, analysisElements.splitCanvas, 'doughnut', data, options);
+            };
+            
+            const renderSessionDetails = (sessions) => {
+                analysisElements.sessionDetailsList.innerHTML = '';
+                if (sessions.length === 0) {
+                    analysisElements.sessionDetailsList.innerHTML = `<p class="text-gray-500 text-center">No sessions in this period.</p>`;
+                    return;
+                }
+                const sortedSessions = sessions.sort((a,b) => new Date(b.startTime) - new Date(a.startTime));
+                sortedSessions.forEach(session => {
+                    const el = document.createElement('div');
+                    el.className = 'grid grid-cols-3 gap-4 items-center p-2 border-b border-gray-700 text-sm';
+                    el.innerHTML = `
+                        <div class="col-span-2">
+                            <p class="font-semibold text-gray-200 truncate">${session.title}</p>
+                            <p class="text-xs text-gray-400">${session.category}</p>
+                        </div>
+                        <div class="text-right font-mono text-green-400">${formatDuration(session.duration)}</div>
+                    `;
+                    analysisElements.sessionDetailsList.appendChild(el);
+                });
             };
 
             const handleStartSession = () => {
